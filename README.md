@@ -51,6 +51,6 @@ All four previews are real gameplay from this build — every HUD element in the
 - `screenshots/1-pier.jpg` — Pier Escape (sunset, heli spotlight)
 - `screenshots/2-repo.jpg` — Repo Rodeo (dusk, roadblock)
 - `screenshots/3-marina.jpg` — Marina Getaway (golden hour, marina bridge)
-- `screenshots/6-crew-chase.jpg` — Nocturnal Heat chase with EYES OUT active (gold minimap rings)
+- `screenshots/5-title-menu.jpg` — Title main menu (job list, save info, NEW GAME / CONTINUE / CONTROLS / GARAGE)
 
-The title menu and garage workshop are described in this README and playable in the game.
+The garage workshop is described in this README and playable in the game.

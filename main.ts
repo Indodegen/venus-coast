@@ -73,7 +73,7 @@ async function main() {
       'Bay Auto garage: repaint the REDFIRE V8 + body armor upgrades (max condition up to 175, damage reduction up to 45%)',
     ],
     controls: 'WASD drive, SPACE handbrake, 1-4 weapons, CLICK shoot, Z/X/C crew abilities, G garage (in the Bay Auto zone), R radio',
-    screenshots: ['screenshots/1-pier.jpg', 'screenshots/2-repo.jpg', 'screenshots/3-marina.jpg', 'screenshots/6-crew-chase.jpg'],
+    screenshots: ['screenshots/1-pier.jpg', 'screenshots/2-repo.jpg', 'screenshots/3-marina.jpg', 'screenshots/5-title-menu.jpg'],
     hud_lock: 'minimap bottom-left; dispatch middle-left [UNIT | distance m | ACTION]; objective top-left; fixer dialog bottom-center; weapon slots middle-right; wanted + money top-right; vehicle status bottom-right; radio under speedometer',
   };
 
