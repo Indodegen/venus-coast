@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VENUS COAST — open-world crime at sunset</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0b0e1a;
+    font-family: "Arial Black", Arial, Helvetica, sans-serif; font-weight: 700; }
+  #game-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .panel { position: fixed; background: rgba(6, 8, 18, 0.62); border: 2px solid rgba(255,255,255,0.22);
+    border-radius: 10px; color: #fff; padding: 8px 12px; text-shadow: 0 2px 3px rgba(0,0,0,0.8);
+    backdrop-filter: blur(2px); z-index: 10; }
+  .panel h3 { font-size: 13px; letter-spacing: 1px; color: #ffd23f; }
+  .panel .sub { font-size: 11px; color: #cfe3ff; font-weight: 700; }
+
+  /* KIRI ATAS — Mission Objective */
+  #objective { top: 14px; left: 14px; width: 340px; }
+  #objective .job { font-size: 17px; color: #fff; letter-spacing: 0.5px; }
+  #objective .stage { font-size: 12px; color: #7df9ff; margin-top: 2px; }
+  #objective .timer { font-size: 20px; color: #ff5a3c; margin-top: 2px; }
+  #objective .next { font-size: 12px; color: #b8ffb0; margin-top: 2px; }
+
+  /* KIRI TENGAH — Police Dispatch */
+  #dispatch { top: 196px; left: 14px; width: 340px; }
+  #dispatch .row { display: flex; justify-content: space-between; font-size: 12px;
+    padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.12); }
+  #dispatch .row:last-child { border-bottom: none; }
+  #dispatch .unit { color: #7df9ff; }
+  #dispatch .dist { color: #fff; }
+  #dispatch .act { color: #ffb02e; }
+  #dispatch .act.SPOTLIGHT { color: #ffe95a; }
+  #dispatch .act.ROADBLOCK { color: #ff5a3c; }
+
+  /* KIRI BAWAH — Minimap bulat */
+  #minimap-wrap { left: 14px; bottom: 14px; width: 190px; height: 190px; position: fixed; z-index: 10; }
+  #minimap { width: 190px; height: 190px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.35);
+    background: rgba(8, 12, 26, 0.72); display: block; }
+  #minimap-label { position: absolute; left: 0; right: 0; bottom: -2px; text-align: center;
+    font-size: 11px; color: #ffd23f; letter-spacing: 2px; text-shadow: 0 2px 3px #000; }
+
+  /* TENGAH BAWAH — Dialog Fixer NPC (tidak boleh menutupi panel lain) */
+  #dialog { left: 50%; bottom: 14px; transform: translateX(-50%); width: 560px; max-width: 44vw;
+    display: flex; gap: 10px; align-items: flex-start; }
+  #dialog .avatar { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 8px; border: 2px solid #ff5fa2;
+    background: linear-gradient(135deg, #ff5fa2, #7b2ff7); color: #fff; font-size: 24px;
+    display: flex; align-items: center; justify-content: center; }
+  #dialog .who { font-size: 12px; color: #ff8fc0; letter-spacing: 1px; }
+  #dialog .text { font-size: 13px; color: #fff; line-height: 1.35; margin-top: 2px; }
+
+  /* KANAN TENGAH — Weapon Slot */
+  #weapons { top: 50%; right: 14px; transform: translateY(-50%); width: 168px; }
+  #weapons .slot { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 2px;
+    border-bottom: 1px solid rgba(255,255,255,0.12); color: #dfe8ff; }
+  #weapons .slot:last-child { border-bottom: none; }
+  #weapons .slot.active { color: #ffd23f; }
+  #weapons .slot .ammo { color: #9fd8ff; }
+  #weapons .slot.active .ammo { color: #ffd23f; }
+
+  /* KANAN ATAS — Wanted + uang */
+  #wanted { top: 14px; right: 14px; text-align: right; min-width: 210px; }
+  #wanted .stars { font-size: 24px; color: #ffd23f; letter-spacing: 2px; line-height: 1; }
+  #wanted .stars .off { color: rgba(255,255,255,0.28); }
+  #wanted .money { font-size: 26px; color: #7dff8a; margin-top: 2px; }
+  #wanted .respect { font-size: 11px; color: #cfe3ff; margin-top: 2px; }
+
+  /* KANAN BAWAH — Status kendaraan */
+  #vehicle { right: 14px; bottom: 14px; width: 300px; text-align: right; }
+  #vehicle .carname { font-size: 16px; color: #fff; }
+  #vehicle .speed { font-size: 30px; color: #ffd23f; line-height: 1.05; }
+  #vehicle .speed small { font-size: 12px; color: #cfe3ff; }
+  #vehicle .bar-row { display: flex; align-items: center; gap: 6px; justify-content: flex-end;
+    font-size: 11px; margin-top: 3px; }
+  #vehicle .bar { width: 130px; height: 9px; background: rgba(255,255,255,0.18); border-radius: 5px; overflow: hidden; }
+  #vehicle .bar > div { height: 100%; }
+  #cond-fill { background: #7dff8a; }
+  #armor-fill { background: #57b6ff; }
+  #health-fill { background: #ff5a3c; }
+  #radio { font-size: 11px; color: #ffd23f; margin-top: 5px; letter-spacing: 0.5px; }
+
+  /* Layar judul */
+  #title-screen { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px;
+    background: linear-gradient(180deg, rgba(20,8,40,0.55) 0%, rgba(255,110,60,0.28) 55%, rgba(5,8,20,0.78) 100%); }
+  #title-screen h1 { font-size: 64px; letter-spacing: 4px; color: #ffd23f;
+    text-shadow: 0 4px 0 #ff5a3c, 0 8px 24px rgba(0,0,0,0.7); }
+  #title-screen h2 { font-size: 16px; letter-spacing: 6px; color: #7df9ff; }
+  #title-screen .missions { background: rgba(6,8,18,0.66); border: 2px solid rgba(255,255,255,0.25);
+    border-radius: 12px; padding: 14px 20px; color: #fff; font-size: 14px; line-height: 1.9; }
+  #title-screen .missions b { color: #ffd23f; }
+  #title-screen .hint { font-size: 12px; color: #dfe8ff; letter-spacing: 1px; }
+  /* KANAN — Crew Ability (di bawah Weapon Slot, tidak menutupi panel lain) */
+  #crew { top: calc(50% + 84px); right: 14px; width: 216px; padding: 6px 10px; }
+  #crew h3 { margin-bottom: 4px; }
+  #crew .skill { display: flex; align-items: center; gap: 6px; font-size: 11px; padding: 4px 2px;
+    border-bottom: 1px solid rgba(255,255,255,0.12); color: #dfe8ff; cursor: pointer; }
+  #crew .skill:last-of-type { border-bottom: none; }
+  #crew .skill .key { flex: 0 0 16px; height: 16px; border: 1px solid #ffd23f; border-radius: 4px;
+    color: #ffd23f; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+  #crew .skill .sname { flex: 1; letter-spacing: 0.5px; }
+  #crew .skill .cost { color: #7dff8a; }
+  #crew .skill .status { color: #9fd8ff; min-width: 44px; text-align: right; }
+  #crew .skill.ready .status { color: #7dff8a; }
+  #crew .skill.active { background: rgba(125,255,138,0.14); }
+  #crew .skill.active .status { color: #7dff8a; }
+  #crew .skill.cooldown .status { color: #ffb02e; }
+  #crew .skill.need .status { color: #ff5a3c; }
+  #crew .skill-msg { font-size: 10px; color: #ffb02e; min-height: 12px; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Prompt garasi di dalam dunia (muncul saat mobil masuk zona BAY AUTO) */
+  #garage-prompt { left: 50%; bottom: 104px; transform: translateX(-50%); display: none;
+    font-size: 13px; color: #ffd23f; letter-spacing: 1px; }
+
+  /* Tombol menu utama */
+  /* shared button type: all game buttons use the inherited display font, bold,
+     no border, pointer cursor — the three button rules below only set their
+     own colors, size and padding */
+  .menu-btn, .overlay .close-btn, #body-upgrade-btn { font-family: inherit; font-weight: 700;
+    border: none; cursor: pointer; }
+  .menu-btn { font-size: 18px; letter-spacing: 2px;
+    color: #1a0b00; background: linear-gradient(180deg, #ffd23f, #ff9a2e);
+    border-radius: 12px; padding: 12px 34px;
+    box-shadow: 0 5px 0 #b35c00, 0 8px 20px rgba(0,0,0,0.5); min-width: 280px; }
+  .menu-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #b35c00; }
+  .menu-btn.secondary { background: linear-gradient(180deg, #7df9ff, #2a9fd8); color: #06222e;
+    box-shadow: 0 5px 0 #145a78, 0 8px 20px rgba(0,0,0,0.5); }
+  .menu-btn:disabled { background: #5a6068; color: #c9cdd4; box-shadow: 0 5px 0 #33383f; cursor: not-allowed; }
+  #save-info { font-size: 12px; color: #7dff8a; letter-spacing: 1px; min-height: 14px; }
+
+  /* Overlay panel (Controls & Garage) — di atas scene, tembus pandang di tepi */
+  .overlay { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center;
+    background: rgba(5,8,20,0.55); }
+  .overlay .box { background: rgba(6,8,18,0.88); border: 2px solid rgba(255,255,255,0.25);
+    border-radius: 14px; padding: 22px 28px; color: #fff; width: 560px; max-width: 92vw; max-height: 88vh; overflow: auto; }
+  .overlay .box h2 { font-size: 26px; color: #ffd23f; letter-spacing: 2px; margin-bottom: 8px; }
+  .overlay .box h3 { font-size: 13px; letter-spacing: 1px; color: #7df9ff; margin: 14px 0 6px; }
+  .overlay .box .row { font-size: 13px; line-height: 1.9; color: #dfe8ff; }
+  .overlay .box .row b { color: #ffd23f; }
+  .overlay .close-btn { font-size: 15px; letter-spacing: 1px;
+    color: #1a0b00; background: linear-gradient(180deg, #ffd23f, #ff9a2e);
+    border-radius: 10px; padding: 10px 26px; margin-top: 16px; }
+  #paint-swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+  .swatch { width: 44px; height: 44px; border-radius: 10px; border: 3px solid rgba(255,255,255,0.35);
+    cursor: pointer; }
+  .swatch.selected { border-color: #ffd23f; box-shadow: 0 0 0 2px #ffd23f, 0 0 14px rgba(255,210,63,0.7); }
+  .swatch.locked { opacity: 0.45; }
+  #garage-money { font-size: 18px; color: #7dff8a; }
+  #body-info { font-size: 13px; color: #dfe8ff; line-height: 1.6; }
+  #body-upgrade-btn { font-size: 15px; letter-spacing: 1px;
+    color: #1a0b00; background: linear-gradient(180deg, #7df9ff, #2a9fd8);
+    border-radius: 10px; padding: 10px 22px; margin-top: 8px; }
+  #body-upgrade-btn:disabled { background: #5a6068; color: #c9cdd4; cursor: not-allowed; }
+  #garage-msg { font-size: 12px; color: #ffb02e; min-height: 16px; margin-top: 8px; }
+
+  #mission-complete { position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%); z-index: 40;
+    display: none; text-align: center; background: rgba(6,8,18,0.78); border: 2px solid #ffd23f;
+    border-radius: 14px; padding: 22px 34px; color: #fff; }
+  #mission-complete h2 { font-size: 28px; color: #ffd23f; }
+  #mission-complete p { font-size: 14px; margin-top: 6px; color: #dfe8ff; }
+</style>
+</head>
+<body>
+<canvas id="game-canvas"></canvas>
+
+<!-- KIRI ATAS: Mission Objective -->
+<div class="panel" id="objective">
+  <h3 id="obj-tag">JOB 1/4 — PIER ESCAPE</h3>
+  <div class="job" id="obj-name">Reach the pier</div>
+  <div class="stage" id="obj-stage">STAGE 1/2</div>
+  <div class="timer" id="obj-timer">⏱ 3:00</div>
+  <div class="next" id="obj-next">NEXT: Beach road checkpoint</div>
+</div>
+
+<!-- KIRI TENGAH: Police Dispatch -->
+<div class="panel" id="dispatch">
+  <h3>VENUS PD DISPATCH — <span id="dispatch-count">2 UNITS</span></h3>
+  <div id="dispatch-rows"></div>
+</div>
+
+<!-- KIRI BAWAH: Minimap -->
+<div id="minimap-wrap">
+  <canvas id="minimap" width="190" height="190"></canvas>
+  <div id="minimap-label">VENUS COAST</div>
+</div>
+
+<!-- TENGAH BAWAH: Dialog Fixer -->
+<div class="panel" id="dialog">
+  <div class="avatar" id="dialog-avatar">D</div>
+  <div>
+    <div class="who" id="dialog-who">UNCLE DEE — FIXER</div>
+    <div class="text" id="dialog-text">Stick to the shoreline, kid. The pier is one block west.</div>
+  </div>
+</div>
+
+<!-- KANAN TENGAH: Weapon Slots -->
+<div class="panel" id="weapons">
+  <h3>WEAPONS</h3>
+  <div class="slot active" data-w="0"><span>1 · FISTS</span><span class="ammo">—</span></div>
+  <div class="slot" data-w="1"><span>2 · BAT</span><span class="ammo">—</span></div>
+  <div class="slot" data-w="2"><span>3 · PISTOL</span><span class="ammo">12 / 48</span></div>
+  <div class="slot" data-w="3"><span>4 · SMG</span><span class="ammo">30 / 90</span></div>
+</div>
+
+<!-- KANAN: Crew Ability (di bawah Weapon Slot) -->
+<div class="panel" id="crew">
+  <h3>CREW ABILITY</h3>
+  <div class="skill" data-skill="0"><span class="key">Z</span><span class="sname">SWAP PLATES</span><span class="cost">$150</span><span class="status">READY</span></div>
+  <div class="skill" data-skill="1"><span class="key">X</span><span class="sname">QUICK FIX</span><span class="cost">$200</span><span class="status">READY</span></div>
+  <div class="skill" data-skill="2"><span class="key">C</span><span class="sname">EYES OUT</span><span class="cost">$100</span><span class="status">READY</span></div>
+  <div class="skill-msg" id="crew-msg"></div>
+</div>
+
+<!-- KANAN ATAS: Wanted + uang -->
+<div class="panel" id="wanted">
+  <div class="stars" id="wanted-stars">★★<span class="off">★★★</span></div>
+  <div class="money" id="money">$1,250</div>
+  <div class="respect" id="respect">RESPECT LV 1 · ROOKIE</div>
+</div>
+
+<!-- KANAN BAWAH: Status kendaraan -->
+<div class="panel" id="vehicle">
+  <div class="carname" id="car-name">REDFIRE V8</div>
+  <div class="speed"><span id="speed">0</span> <small>KM/H</small></div>
+  <div class="bar-row"><span>CONDITION</span><div class="bar"><div id="cond-fill" style="width:100%"></div></div><span id="cond-num">100%</span></div>
+  <div class="bar-row"><span>ARMOR</span><div class="bar"><div id="armor-fill" style="width:80%"></div></div><span id="armor-num">80</span></div>
+  <div class="bar-row"><span>HEALTH</span><div class="bar"><div id="health-fill" style="width:100%"></div></div><span id="health-num">100</span></div>
+  <div id="radio">♪ LUMEN FM 98.6 — NEON TIDELINE</div>
+</div>
+
+<!-- Banner tengah: mission complete -->
+<div id="mission-complete"><h2 id="mc-title">JOB COMPLETE</h2><p id="mc-text"></p></div>
+
+<!-- Prompt garasi (muncul di zona BAY AUTO) -->
+<div class="panel" id="garage-prompt">🛠 BAY AUTO GARAGE — press G</div>
+
+<!-- Layar judul -->
+<div id="title-screen">
+  <h1>VENUS COAST</h1>
+  <h2>OPEN-WORLD CRIME AT SUNSET</h2>
+  <div class="missions">
+    <b>1 · PIER ESCAPE</b> — sunset, heli spotlight<br>
+    <b>2 · REPO RODEO</b> — dusk, police roadblock<br>
+    <b>3 · MARINA GETAWAY</b> — golden hour, marina bridge<br>
+    <b>4 · NOCTURNAL HEAT</b> — neon night, 5 stars
+  </div>
+  <div id="save-info"></div>
+  <button class="menu-btn" id="new-btn">▶ NEW GAME</button>
+  <button class="menu-btn secondary" id="continue-btn">▶ CONTINUE</button>
+  <button class="menu-btn secondary" id="controls-btn">CONTROLS</button>
+  <button class="menu-btn secondary" id="garage-btn">🛠 GARAGE</button>
+  <div class="hint">WASD drive &nbsp;·&nbsp; SPACE handbrake &nbsp;·&nbsp; 1-4 weapons &nbsp;·&nbsp; CLICK shoot &nbsp;·&nbsp; Z/X/C crew &nbsp;·&nbsp; G garage &nbsp;·&nbsp; R radio</div>
+</div>
+
+<!-- Overlay: Controls -->
+<div class="overlay" id="controls-overlay">
+  <div class="box">
+    <h2>CONTROLS</h2>
+    <div class="row">
+      <b>W A S D</b> — drive &nbsp;·&nbsp; <b>SPACE</b> — handbrake<br>
+      <b>1 / 2 / 3 / 4</b> — Fists / Bat / Pistol / SMG<br>
+      <b>CLICK</b> — shoot &nbsp;·&nbsp; <b>R</b> — radio<br>
+      <b>Z</b> — SWAP PLATES ($150, 60s cooldown)<br>
+      <b>X</b> — QUICK FIX ($200, 45s cooldown)<br>
+      <b>C</b> — EYES OUT ($100, 30s cooldown)<br>
+      <b>G</b> — open BAY AUTO garage (inside the garage zone)
+    </div>
+    <button class="close-btn" id="controls-close-btn">CLOSE</button>
+  </div>
+</div>
+
+<!-- Overlay: Bay Auto Garage -->
+<div class="overlay" id="garage-overlay">
+  <div class="box">
+    <h2>🛠 BAY AUTO GARAGE</h2>
+    <div>UANG: <span id="garage-money">$1,250</span></div>
+    <h3>PAINT — REDFIRE V8 · $100 per repaint</h3>
+    <div id="paint-swatches"></div>
+    <div id="paint-name">VENUS RED</div>
+    <h3>BODY ARMOR — <span id="body-level">LV 0</span></h3>
+    <div id="body-info">MAX CONDITION 100 · MAX ARMOR 80 · DAMAGE -0%</div>
+    <button id="body-upgrade-btn">UPGRADE — $500</button>
+    <div id="garage-msg"></div>
+    <button class="close-btn" id="garage-close-btn">CLOSE — BACK TO THE STREET</button>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
